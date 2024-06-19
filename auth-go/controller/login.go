@@ -18,9 +18,10 @@ var (
 )
 
 func Login(ctx *gin.Context) {
-	var user model.User
 
 	// bind json
+	var user model.User
+
 	err := ctx.ShouldBindJSON(&user)
 	if err != nil {
 		model.Response(ctx, http.StatusInternalServerError, "Invalid login credentials.")
@@ -30,6 +31,7 @@ func Login(ctx *gin.Context) {
 
 	// check username is exist or not
 	var checkData model.User
+
 	result := database.DB.Where("username = ?", user.Username).First(&checkData)
 	log.Println("check data:", checkData)
 
@@ -48,18 +50,6 @@ func Login(ctx *gin.Context) {
 		return
 	}
 
-	// set sessions
-	session, _ := store.Get(ctx.Request, "sessions")
-	session.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   3600 * 24 * 30, // 1 month
-		HttpOnly: true,
-	}
-	session.Values["validate"] = true
-	session.Values["account"] = user.Username
-
-	session.Save(ctx.Request, ctx.Writer)
-
 	// set JWT
 	token, err := helpers.JWTGenerate(user.Username)
 	if err != nil {
@@ -70,8 +60,9 @@ func Login(ctx *gin.Context) {
 	http.SetCookie(ctx.Writer, &http.Cookie{
 		Name:     "token",
 		Path:     "/",
-		Value:    token,
+		Value:    token, // jwt token
 		HttpOnly: true,
+		Secure:   true,
 	})
 
 	// return 200

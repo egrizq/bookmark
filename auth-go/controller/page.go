@@ -10,18 +10,18 @@ import (
 )
 
 func Page(ctx *gin.Context) {
-	session, _ := store.Get(ctx.Request, "sessions")
-	if auth, ok := session.Values["validate"].(bool); !ok || !auth {
-		ctx.JSON(http.StatusUnauthorized, "there's no sessions")
-		return
-	}
-
 	var allData model.User
 	database.DB.First(&allData).Scan(&allData)
 	log.Println("page data:", allData)
 
+	username, exists := ctx.Get("username")
+	if !exists {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get username from context"})
+		return
+	}
+
 	response := make(map[string]interface{})
-	response["sessions"] = session.Values["account"]
+	response["username"] = username
 	response["data "] = allData
 
 	ctx.JSON(http.StatusOK, response)

@@ -14,16 +14,16 @@ import (
 var secretKey = []byte(os.Getenv("JWT_KEY"))
 
 type JWTClaim struct {
-	Email string
+	Username string
 	jwt.RegisteredClaims
 }
 
 func JWTGenerate(username string) (string, error) {
-	// expired one hour
-	expTime := time.Now().Add(time.Second * 60 * 60)
+	// expired 15 minute
+	expTime := time.Now().Add(15 * time.Minute)
 
 	claims := JWTClaim{
-		Email: username,
+		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "jwt-token",
 			ExpiresAt: jwt.NewNumericDate(expTime),
@@ -55,6 +55,7 @@ func JWTMiddleware() gin.HandlerFunc {
 		token, err := jwt.ParseWithClaims(cookie, claims, func(t *jwt.Token) (interface{}, error) {
 			return secretKey, nil
 		})
+		log.Println("username from jwt:", claims.Username)
 
 		if err != nil {
 			if err == jwt.ErrSignatureInvalid {
@@ -69,6 +70,7 @@ func JWTMiddleware() gin.HandlerFunc {
 			model.Response(ctx, http.StatusInternalServerError, "token is invalid")
 			return
 		}
+		ctx.Set("username", claims.Username)
 
 		// go to handler
 		ctx.Next()
