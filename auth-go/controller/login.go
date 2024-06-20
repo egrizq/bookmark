@@ -6,15 +6,9 @@ import (
 	"auth-go/model"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
-)
-
-var (
-	store = sessions.NewCookieStore([]byte(os.Getenv("SESSIONS_KEY")))
 )
 
 func Login(ctx *gin.Context) {
@@ -27,13 +21,13 @@ func Login(ctx *gin.Context) {
 		model.Response(ctx, http.StatusInternalServerError, "Invalid login credentials.")
 		return
 	}
-	log.Println("data json:", user)
+	log.Println("response user:", user)
 
 	// check username is exist or not
-	var checkData model.User
+	var userFromDB model.User
 
-	result := database.DB.Where("username = ?", user.Username).First(&checkData)
-	log.Println("check data:", checkData)
+	result := database.DB.Where("username = ?", user.Username).First(&userFromDB)
+	log.Println("check username:", userFromDB.Username)
 
 	if result.Error != nil {
 		model.Response(ctx, http.StatusUnauthorized, "Username of Password is invalid")
@@ -44,27 +38,28 @@ func Login(ctx *gin.Context) {
 	}
 
 	// compare password
-	err = bcrypt.CompareHashAndPassword([]byte(checkData.Password), []byte(user.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(userFromDB.Password), []byte(user.Password))
 	if err != nil {
 		model.Response(ctx, http.StatusUnauthorized, "Username of Password is invalid")
 		return
 	}
 
-	// set JWT
-	token, err := helpers.JWTGenerate(user.Username)
+	// set session
+	session, err := helpers.STORE.Get(ctx.Request, "session")
 	if err != nil {
 		model.Response(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:     "token",
-		Path:     "/",
-		Value:    token, // jwt token
-		HttpOnly: true,
-		Secure:   true,
-	})
+	session.Values["username"] = user.Username
+	log.Println("set session for:", session.Values["username"])
+
+	if err := session.Save(ctx.Request, ctx.Writer); err != nil {
+		model.Response(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	// return 200
-	model.Response(ctx, http.StatusOK, "Success")
+	model.Response(ctx, http.StatusOK, user.Username)
+	log.Println("login success")
 }

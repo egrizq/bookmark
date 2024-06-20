@@ -10,6 +10,7 @@ import (
 
 func main() {
 	database.Connection()
+	helpers.InitSession()
 
 	router := gin.Default()
 	router.Use(helpers.CORSMiddleware())
@@ -19,7 +20,7 @@ func main() {
 	router.POST("/logout", controller.Logout)
 
 	app := router.Group("/page")
-	app.Use(helpers.JWTMiddleware())
+	app.Use(helpers.CheckSession())
 
 	app.GET("/main", controller.Page)
 
