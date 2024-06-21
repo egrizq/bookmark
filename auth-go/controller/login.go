@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"auth-go/database"
 	"auth-go/helpers"
 	"auth-go/model"
 	"log"
@@ -12,49 +11,31 @@ import (
 )
 
 func Login(ctx *gin.Context) {
+	log.Println("login begin")
 
 	// bind json
-	var user model.User
-
-	err := ctx.ShouldBindJSON(&user)
+	user, err := helpers.BindJSON(ctx)
 	if err != nil {
-		model.Response(ctx, http.StatusInternalServerError, "Invalid login credentials.")
+		model.Response(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
-	log.Println("response user:", user)
 
 	// check username is exist or not
-	var userFromDB model.User
-
-	result := database.DB.Where("username = ?", user.Username).First(&userFromDB)
-	log.Println("check username:", userFromDB.Username)
-
-	if result.Error != nil {
-		model.Response(ctx, http.StatusUnauthorized, "Username of Password is invalid")
-		return
-	} else if result.RowsAffected < 1 {
+	userPasswordFromDB, err := helpers.IsUsernameExistForLogin(user.Username)
+	if err != nil {
 		model.Response(ctx, http.StatusUnauthorized, "Username of Password is invalid")
 		return
 	}
 
 	// compare password
-	err = bcrypt.CompareHashAndPassword([]byte(userFromDB.Password), []byte(user.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(userPasswordFromDB), []byte(user.Password))
 	if err != nil {
 		model.Response(ctx, http.StatusUnauthorized, "Username of Password is invalid")
 		return
 	}
 
 	// set session
-	session, err := helpers.STORE.Get(ctx.Request, "session")
-	if err != nil {
-		model.Response(ctx, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	session.Values["username"] = user.Username
-	log.Println("set session for:", session.Values["username"])
-
-	if err := session.Save(ctx.Request, ctx.Writer); err != nil {
+	if err := helpers.SetSession(ctx, user.Username); err != nil {
 		model.Response(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
