@@ -43,7 +43,6 @@ func CheckSession() gin.HandlerFunc {
 		username, ok := session.Values["username"].(string)
 
 		if !ok || username == "" {
-			model.Response(ctx, http.StatusUnauthorized, "You're not allowed to access!")
 			ctx.Abort()
 			return
 		}
