@@ -11,26 +11,24 @@ import (
 )
 
 func Login(ctx *gin.Context) {
-	log.Println("login begin")
-
 	// bind json
 	user, err := helpers.BindJSON(ctx)
 	if err != nil {
-		model.Response(ctx, http.StatusInternalServerError, err.Error())
+		model.Response(ctx, http.StatusInternalServerError, "invalid request")
 		return
 	}
 
 	// check username is exist or not
 	userPasswordFromDB, err := helpers.IsUsernameExistForLogin(user.Username)
 	if err != nil {
-		model.Response(ctx, http.StatusUnauthorized, "Username of Password is invalid")
+		model.Response(ctx, http.StatusUnauthorized, "username or password is invalid")
 		return
 	}
 
 	// compare password
 	err = bcrypt.CompareHashAndPassword([]byte(userPasswordFromDB), []byte(user.Password))
 	if err != nil {
-		model.Response(ctx, http.StatusUnauthorized, "Username of Password is invalid")
+		model.Response(ctx, http.StatusUnauthorized, "username or password is invalid")
 		return
 	}
 

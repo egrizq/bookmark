@@ -29,7 +29,8 @@ func SignUp(ctx *gin.Context) {
 	user.Password = string(hashPass)
 
 	// insert to database
-	if result := database.DB.Create(user); result.Error != nil {
+	saveUser := model.FormatUser(user)
+	if result := database.DB.Create(saveUser); result.Error != nil {
 		model.Response(ctx, http.StatusInternalServerError, "an error occurred while creating your account")
 		return
 	}

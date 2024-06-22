@@ -9,11 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func BindJSON(ctx *gin.Context) (model.User, error) {
-	var user model.User
+func BindJSON(ctx *gin.Context) (model.RequestUser, error) {
+	var user model.RequestUser
 
 	if err := ctx.ShouldBindJSON(&user); err != nil {
-		return model.User{}, fmt.Errorf("invalid login credentials")
+		return model.RequestUser{}, fmt.Errorf("invalid login credentials")
 	}
 	log.Println("body user:", user)
 

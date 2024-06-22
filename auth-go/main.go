@@ -19,10 +19,18 @@ func main() {
 	router.POST("/login", controller.Login)
 	router.POST("/logout", controller.Logout)
 
-	app := router.Group("/page")
+	app := router.Group("/bookmark")
 	app.Use(helpers.CheckSession())
 
-	app.GET("/main", controller.Page)
+	// testing
+	app.GET("/page", controller.Page)
+
+	// bookmarks
+	app.POST("/add", controller.NewBookmark)
+	app.GET("/get/:category", controller.GetBookmarkByCategory)
+
+	// category
+	app.POST("/category/add", controller.NewCategory)
 
 	router.Run(":8000")
 }

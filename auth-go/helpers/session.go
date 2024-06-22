@@ -41,7 +41,6 @@ func CheckSession() gin.HandlerFunc {
 		}
 
 		username, ok := session.Values["username"].(string)
-
 		if !ok || username == "" {
 			ctx.Abort()
 			return

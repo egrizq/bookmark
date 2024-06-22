@@ -23,5 +23,5 @@ func Logout(ctx *gin.Context) {
 	}
 
 	// response 200
-	model.Response(ctx, http.StatusOK, "You're Logout")
+	model.Response(ctx, http.StatusOK, "you're logout")
 }

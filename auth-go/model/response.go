@@ -4,10 +4,10 @@ import "github.com/gin-gonic/gin"
 
 type ResponseType struct {
 	StatusCode int
-	Message    string
+	Message    interface{}
 }
 
-func Response(ctx *gin.Context, status int, message string) {
+func Response(ctx *gin.Context, status int, message interface{}) {
 	res := ResponseType{
 		StatusCode: status,
 		Message:    message,
