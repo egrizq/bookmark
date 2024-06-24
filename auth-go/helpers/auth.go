@@ -60,3 +60,18 @@ func SetSession(ctx *gin.Context, username string) error {
 
 	return nil
 }
+
+func GetSessionUsername(ctx *gin.Context) (string, error) {
+	session, err := STORE.Get(ctx.Request, "session")
+	if err != nil {
+		return "", err
+	}
+
+	username, ok := session.Values["username"].(string)
+	if !ok || username == "" {
+		return "", err
+	}
+	log.Println("username:", username)
+
+	return username, nil
+}
