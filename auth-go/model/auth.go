@@ -10,10 +10,11 @@ type RequestUser struct {
 
 type User struct {
 	gorm.Model
-	Email    string
-	Username string
-	Password string
-	Bookmark []Bookmark `gorm:"foreignKey:UserID"`
+	Email             string
+	Username          string
+	Password          string
+	Bookmarks         []Bookmark         `gorm:"foreignKey:UserID"`
+	CategoryBookmarks []CategoryBookmark `gorm:"foreignKey:UserID"`
 }
 
 func FormatUser(request RequestUser) *User {
