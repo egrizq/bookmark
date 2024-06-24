@@ -4,7 +4,6 @@ import (
 	"auth-go/database"
 	"auth-go/helpers"
 	"auth-go/model"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,29 +11,37 @@ import (
 
 func NewBookmark(ctx *gin.Context) {
 	// bind json
-	var requestData model.RequestBookmark
-
-	if err := ctx.ShouldBindJSON(&requestData); err != nil {
-		model.Response(ctx, http.StatusBadRequest, "invalid request")
-		return
-	}
-	log.Println(requestData)
-
-	// get id by username
-	var id model.User
-	result := database.DB.Select("id").Where("username = ?", requestData.Username).Find(&id)
-	if result.Error != nil {
-		model.Response(ctx, http.StatusInternalServerError, result.Error.Error())
-		return
-	} else if result.RowsAffected < 1 {
-		model.Response(ctx, http.StatusBadRequest, "username is not found")
+	requestData, err := helpers.RequestBookmark(ctx)
+	if err != nil {
+		model.Response(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	// insert bookmark
-	save := model.FormatSaveBookmark(requestData, int(id.ID))
-	if result := database.DB.Create(save); result.Error != nil {
-		model.Response(ctx, http.StatusInternalServerError, result.Error.Error())
+	// get username by session
+	username, err := helpers.GetSessionUsername(ctx)
+	if err != nil {
+		model.Response(ctx, http.StatusUnauthorized, "invalid credentials")
+		return
+	}
+
+	// get user_id by username
+	userID, err := helpers.GetUserID(username)
+	if err != nil {
+		model.Response(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// check category_name & get category id
+	categoryID, err := helpers.CheckCategoryAndGetCategoryID(requestData.Category)
+	if err != nil {
+		model.Response(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// insert new bookmark
+	err = helpers.InsertBookmarkToDatabase(requestData, userID, categoryID)
+	if err != nil {
+		model.Response(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -44,37 +51,68 @@ func NewBookmark(ctx *gin.Context) {
 
 func GetBookmarkByCategory(ctx *gin.Context) {
 	// get params
-	params := ctx.Param("category")
+	category := ctx.Param("category")
 
 	// get username by session
-	session, err := helpers.STORE.Get(ctx.Request, "session")
+	username, err := helpers.GetSessionUsername(ctx)
 	if err != nil {
-		model.Response(ctx, http.StatusInternalServerError, "cannot get session")
+		model.Response(ctx, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
-	username, ok := session.Values["username"].(string)
-	if !ok {
-		model.Response(ctx, http.StatusInternalServerError, "cannot get session")
+	// get category id
+	categoryID, err := helpers.CheckCategoryAndUserID(category, username)
+	if err != nil {
+		model.Response(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// get category
+	listBookmark, err := helpers.GetBookmark(categoryID, username)
+	if err != nil {
+		model.Response(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// response 200
+	model.Response(ctx, http.StatusOK, listBookmark)
+}
+
+func NewCategory(ctx *gin.Context) {
+	// bind json
+	category, err := helpers.RequestCategory(ctx)
+	if err != nil {
+		model.Response(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// get username by session
+	username, err := helpers.GetSessionUsername(ctx)
+	if err != nil {
+		model.Response(ctx, http.StatusUnauthorized, "invalid credentials")
+		return
+	}
+
+	// get username id
+	userID, err := helpers.GetUserID(username)
+	if err != nil {
+		model.Response(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// check category is exist or not
-	// db.Table("users").Select("users.name, emails.email").Joins("left join emails on emails.user_id = users.id").Scan(&results)
-
-	type res struct {
-		Url    string
-		Social string
+	err = helpers.CheckCategoryExistOrNot(userID, category)
+	if err != nil {
+		model.Response(ctx, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	var get []res
-	database.DB.Table("bookmarks").Select("bookmarks.social, bookmarks.url").Joins("join users on users.id = bookmarks.user_id").Where("users.username = ? AND bookmarks.category = ?", username, params).Scan(&get)
+	// insert new category
+	save := model.FormatCategory(userID, category)
+	if result := database.DB.Save(&save); result.Error != nil {
+		model.Response(ctx, http.StatusInternalServerError, result.Error.Error())
+		return
+	}
 
-	log.Println(get)
-	// response 200
-	model.Response(ctx, http.StatusOK, get)
-}
-
-func NewCategory(ctx *gin.Context) {
-
+	model.Response(ctx, http.StatusCreated, "success")
 }
