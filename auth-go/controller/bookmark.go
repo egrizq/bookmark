@@ -52,14 +52,8 @@ func NewBookmark(ctx *gin.Context) {
 
 func GetBookmarkByCategory(ctx *gin.Context) {
 	// get params
+	username := ctx.Param("username")
 	category := ctx.Param("category")
-
-	// get username by session
-	username, err := helpers.GetSessionUsername(ctx)
-	if err != nil {
-		model.Response(ctx, http.StatusUnauthorized, "invalid credentials")
-		return
-	}
 
 	// get category id
 	categoryID, err := helpers.CheckCategoryAndUserID(category, username)
@@ -79,7 +73,7 @@ func GetBookmarkByCategory(ctx *gin.Context) {
 	model.Response(ctx, http.StatusOK, listBookmark)
 }
 
-func NewCategory(ctx *gin.Context) {
+func InsertNewCategory(ctx *gin.Context) {
 	// bind json
 	category, err := helpers.RequestCategory(ctx)
 	if err != nil {
@@ -128,25 +122,31 @@ func GetListCategory(ctx *gin.Context) {
 	}
 
 	// get list category by username
-	var categoryName []string
-
-	rows := database.DB.Raw(`
-		SELECT c.category_name
-		FROM users u 
-		JOIN category_bookmarks c
-		ON u.id = c.user_id
-		WHERE u.username = ?
-	`, username).Scan(&categoryName)
-	if rows.Error != nil {
-		model.Response(ctx, http.StatusInternalServerError, rows.Error.Error())
+	listCategory, err := helpers.GetCategoryByUsername(username)
+	if err != nil {
+		model.Response(ctx, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	if len(categoryName) < 1 {
-		model.Response(ctx, http.StatusNotFound, "there's no bookmark")
+	// response 200
+	model.Response(ctx, http.StatusOK, listCategory)
+}
+
+func GetListOfCategoryAndNumberOfBookmarks(ctx *gin.Context) {
+	// get session username
+	username, err := helpers.GetSessionUsername(ctx)
+	if err != nil {
+		model.Response(ctx, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
-	log.Println("list category", categoryName)
 
-	model.Response(ctx, http.StatusOK, categoryName)
+	// get category with number of bookmarks
+	categoryAndNumberBookmarks, err := helpers.GetCategoryAndNumberOfBookmarks(username)
+	if err != nil {
+		model.Response(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// response 200
+	model.Response(ctx, http.StatusOK, categoryAndNumberBookmarks)
 }

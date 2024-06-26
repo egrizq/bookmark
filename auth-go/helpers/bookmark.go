@@ -124,11 +124,15 @@ func RequestCategory(ctx *gin.Context) (string, error) {
 func CheckCategoryExistOrNot(userID int, category string) error {
 	var isCategoryExist model.CategoryBookmark
 
-	database.DB.Raw(`
+	rows := database.DB.Raw(`
 		SELECT c.category_name
 		FROM category_bookmarks c
 		WHERE c.user_id = ? AND c.category_name = ?
 	`, userID, category).Scan(&isCategoryExist)
+
+	if rows.Error != nil {
+		return rows.Error
+	}
 
 	if len(isCategoryExist.CategoryName) > 1 {
 		log.Println("category name:", isCategoryExist.CategoryName)
@@ -137,4 +141,46 @@ func CheckCategoryExistOrNot(userID int, category string) error {
 	log.Println("category is not exist")
 
 	return nil
+}
+
+func GetCategoryByUsername(username string) ([]string, error) {
+	var categoryName []string
+
+	rows := database.DB.Raw(`
+		SELECT c.category_name
+		FROM users u 
+		JOIN category_bookmarks c
+		ON u.id = c.user_id
+		WHERE u.username = ?
+	`, username).Scan(&categoryName)
+	if rows.Error != nil {
+		return []string{}, rows.Error
+	}
+
+	if len(categoryName) < 1 {
+		return []string{}, fmt.Errorf("there's no bookmarks")
+	}
+	log.Println("list category", categoryName)
+
+	return categoryName, nil
+}
+
+func GetCategoryAndNumberOfBookmarks(username string) ([]model.CategoryAndBookmarksNumber, error) {
+	var responseCategoryAndNumber []model.CategoryAndBookmarksNumber
+
+	rows := database.DB.Raw(`
+		SELECT cb.category_name, count(b.url) as number
+		FROM users u
+		JOIN category_bookmarks cb ON cb.user_id = u.id
+		JOIN bookmarks b ON b.category_id = cb.id
+		WHERE u.username = ?
+		GROUP BY cb.category_name
+	`, username).Scan(&responseCategoryAndNumber)
+
+	if rows.Error != nil {
+		return []model.CategoryAndBookmarksNumber{}, fmt.Errorf("internal server error")
+	}
+	log.Println("get category and number", responseCategoryAndNumber)
+
+	return responseCategoryAndNumber, nil
 }
