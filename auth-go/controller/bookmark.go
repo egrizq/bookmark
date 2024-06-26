@@ -4,6 +4,7 @@ import (
 	"auth-go/database"
 	"auth-go/helpers"
 	"auth-go/model"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -113,6 +114,39 @@ func NewCategory(ctx *gin.Context) {
 		model.Response(ctx, http.StatusInternalServerError, result.Error.Error())
 		return
 	}
+	log.Println("new category", save.CategoryName)
 
 	model.Response(ctx, http.StatusCreated, "success")
+}
+
+func GetListCategory(ctx *gin.Context) {
+	// get session username
+	username, err := helpers.GetSessionUsername(ctx)
+	if err != nil {
+		model.Response(ctx, http.StatusUnauthorized, "invalid credentials")
+		return
+	}
+
+	// get list category by username
+	var categoryName []string
+
+	rows := database.DB.Raw(`
+		SELECT c.category_name
+		FROM users u 
+		JOIN category_bookmarks c
+		ON u.id = c.user_id
+		WHERE u.username = ?
+	`, username).Scan(&categoryName)
+	if rows.Error != nil {
+		model.Response(ctx, http.StatusInternalServerError, rows.Error.Error())
+		return
+	}
+
+	if len(categoryName) < 1 {
+		model.Response(ctx, http.StatusNotFound, "there's no bookmark")
+		return
+	}
+	log.Println("list category", categoryName)
+
+	model.Response(ctx, http.StatusOK, categoryName)
 }

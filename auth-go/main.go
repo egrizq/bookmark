@@ -13,24 +13,32 @@ func main() {
 	helpers.InitSession()
 
 	router := gin.Default()
-	router.Use(helpers.CORSMiddleware())
+	router.Use(helpers.CORS())
 
-	router.POST("/signup", controller.SignUp)
+	// public
 	router.POST("/login", controller.Login)
-	router.POST("/logout", controller.Logout)
+	router.POST("/signup", controller.SignUp)
 
+	// public-bookmark
+	router.GET("/get/:username/:category", controller.GetBookmarkByCategory)
+
+	// app
 	app := router.Group("/bookmark")
 	app.Use(helpers.CheckSession())
 
-	// testing
+	// app-page
 	app.GET("/page", controller.Page)
 
-	// bookmarks
-	app.POST("/add", controller.NewBookmark)
-	app.GET("/get/:category", controller.GetBookmarkByCategory)
+	// app-bookmarks
+	app.POST("/insert", controller.NewBookmark)
+	app.GET("/list", controller.GetListOfCategoryAndNumberOfBookmarks)
 
-	// category
-	app.POST("/category/add", controller.NewCategory)
+	// app-category
+	app.POST("/category/insert", controller.InsertNewCategory)
+	app.GET("/category/list", controller.GetListCategory)
+
+	// logout
+	app.POST("/logout", controller.Logout)
 
 	router.Run(":8000")
 }
