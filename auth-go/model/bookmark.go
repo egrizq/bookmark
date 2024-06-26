@@ -49,3 +49,8 @@ func FormatCategory(userId int, categoryName string) *CategoryBookmark {
 		CategoryName: categoryName,
 	}
 }
+
+type CategoryAndBookmarksNumber struct {
+	CategoryName string
+	Number       int
+}
