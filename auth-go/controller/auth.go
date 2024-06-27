@@ -22,14 +22,14 @@ func Login(ctx *gin.Context) {
 	// check username is exist or not
 	userPasswordFromDB, err := helpers.IsUsernameExistForLogin(user.Username)
 	if err != nil {
-		model.Response(ctx, http.StatusUnauthorized, "username or password is invalid")
+		model.Response(ctx, http.StatusUnauthorized, "username atau password salah")
 		return
 	}
 
 	// compare password
 	err = bcrypt.CompareHashAndPassword([]byte(userPasswordFromDB), []byte(user.Password))
 	if err != nil {
-		model.Response(ctx, http.StatusUnauthorized, "username or password is invalid")
+		model.Response(ctx, http.StatusUnauthorized, "username atau password salah")
 		return
 	}
 
@@ -65,7 +65,8 @@ func SignUp(ctx *gin.Context) {
 	// insert to database
 	saveUser := model.FormatUser(user)
 	if result := database.DB.Create(saveUser); result.Error != nil {
-		model.Response(ctx, http.StatusInternalServerError, "an error occurred while creating your account")
+		model.Response(ctx, http.StatusInternalServerError,
+			"terjadi kesalahan secara internal saat pembuatan akun")
 		return
 	}
 

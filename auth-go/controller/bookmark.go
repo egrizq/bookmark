@@ -58,7 +58,7 @@ func GetBookmarkByCategory(ctx *gin.Context) {
 	// get category id
 	categoryID, err := helpers.CheckCategoryAndUserID(category, username)
 	if err != nil {
-		model.Response(ctx, http.StatusInternalServerError, err.Error())
+		model.Response(ctx, http.StatusNotFound, err.Error())
 		return
 	}
 
@@ -124,7 +124,7 @@ func GetListCategory(ctx *gin.Context) {
 	// get list category by username
 	listCategory, err := helpers.GetCategoryByUsername(username)
 	if err != nil {
-		model.Response(ctx, http.StatusUnauthorized, err.Error())
+		model.Response(ctx, http.StatusNoContent, err.Error())
 		return
 	}
 
