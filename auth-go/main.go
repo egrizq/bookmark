@@ -38,7 +38,7 @@ func main() {
 	app.GET("/category/list", controller.GetListCategory)
 
 	// logout
-	app.POST("/logout", controller.Logout)
+	app.GET("/logout", controller.Logout)
 
 	router.Run(":8000")
 }
