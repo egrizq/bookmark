@@ -25,22 +25,16 @@ func NewBookmark(ctx *gin.Context) {
 		return
 	}
 
-	// get user_id by username
-	userID, err := helpers.GetUserID(username)
+	// get user id by category id
+	userIdAndCategoryId, err := helpers.GetUserIDAndCategoryID(username, requestData.Category)
 	if err != nil {
-		model.Response(ctx, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// check category_name & get category id
-	categoryID, err := helpers.CheckCategoryAndGetCategoryID(requestData.Category)
-	if err != nil {
-		model.Response(ctx, http.StatusInternalServerError, err.Error())
+		model.Response(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// insert new bookmark
-	err = helpers.InsertBookmarkToDatabase(requestData, userID, categoryID)
+	err = helpers.InsertBookmarkToDatabase(requestData,
+		userIdAndCategoryId.UserID, userIdAndCategoryId.CategoryID)
 	if err != nil {
 		model.Response(ctx, http.StatusInternalServerError, err.Error())
 		return

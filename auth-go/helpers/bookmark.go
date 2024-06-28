@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -22,6 +23,28 @@ func RequestBookmark(ctx *gin.Context) (model.RequestBookmark, error) {
 	return requestData, nil
 }
 
+func GetUserIDAndCategoryID(username, category string) (model.UserIDCategoryID, error) {
+	var getUserIDAndCategoryID model.UserIDCategoryID
+
+	rows := database.DB.Raw(`
+		SELECT u.id as user_id, ca.id as category_id
+		FROM users u
+		JOIN category_bookmarks ca
+		ON u.id = ca.user_id
+		WHERE u.username = ? AND ca.category_name = ?;
+	`, username, category).Scan(&getUserIDAndCategoryID)
+
+	if rows.Error != nil {
+		return model.UserIDCategoryID{}, fmt.Errorf("internal server error")
+	} else if rows.RowsAffected < 1 {
+		return model.UserIDCategoryID{}, fmt.Errorf("data is not found")
+	}
+	log.Println("user_id:", getUserIDAndCategoryID.UserID)
+	log.Println("category_id:", getUserIDAndCategoryID.CategoryID)
+
+	return getUserIDAndCategoryID, nil
+}
+
 func GetUserID(username string) (int, error) {
 	var userID model.User
 	err := database.DB.Select("id").Where("username = ?", username).First(&userID).Error
@@ -34,23 +57,6 @@ func GetUserID(username string) (int, error) {
 	log.Println("user_id:", userID.ID)
 
 	return int(userID.ID), nil
-}
-
-func CheckCategoryAndGetCategoryID(category string) (int, error) {
-	var categoryID model.CategoryBookmark
-
-	err := database.DB.Select("id").Where("category_name = ?", category).First(&categoryID).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		log.Println("category err:", err.Error())
-		return 0, fmt.Errorf("category is not found")
-	} else if err != nil {
-		log.Println("database error:", err.Error())
-		return 0, fmt.Errorf("internal server error")
-	}
-	log.Println("category_id:", categoryID.ID)
-
-	return int(categoryID.ID), nil
-
 }
 
 func InsertBookmarkToDatabase(requestData model.RequestBookmark, userID int, categoryID int) error {
@@ -80,7 +86,7 @@ func CheckCategoryAndUserID(category, username string) (int, error) {
 		WHERE u.username = ? AND c.category_name = ?
 	`, username, category).Scan(&categoryID)
 	if categoryID < 1 {
-		return 0, fmt.Errorf("category is not found")
+		return 0, fmt.Errorf("kategori tidak ditemukan")
 	}
 	log.Println("id", categoryID)
 
@@ -136,7 +142,7 @@ func CheckCategoryExistOrNot(userID int, category string) error {
 
 	if len(isCategoryExist.CategoryName) > 1 {
 		log.Println("category name:", isCategoryExist.CategoryName)
-		return fmt.Errorf("category already been used")
+		return fmt.Errorf("kategori telah digunakan")
 	}
 	log.Println("category is not exist")
 
@@ -161,6 +167,11 @@ func GetCategoryByUsername(username string) ([]string, error) {
 		return []string{}, fmt.Errorf("there's no bookmarks")
 	}
 	log.Println("list category", categoryName)
+
+	// replace _ to space
+	for index := range categoryName {
+		categoryName[index] = strings.Replace(string(categoryName[index]), "_", " ", -1)
+	}
 
 	return categoryName, nil
 }
