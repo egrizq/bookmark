@@ -19,15 +19,15 @@ func main() {
 	router.POST("/login", controller.Login)
 	router.POST("/signup", controller.SignUp)
 
+	// home
+	router.GET("/page", controller.Page)
+
 	// public-bookmark
 	router.GET("/get/:username/:category", controller.GetBookmarkByCategory)
 
 	// app
 	app := router.Group("/bookmark")
 	app.Use(helpers.CheckSession())
-
-	// app-page
-	app.GET("/page", controller.Page)
 
 	// app-bookmarks
 	app.POST("/insert", controller.NewBookmark)
@@ -36,6 +36,7 @@ func main() {
 	// app-category
 	app.POST("/category/insert", controller.InsertNewCategory)
 	app.GET("/category/list", controller.GetListCategory)
+	app.DELETE("/:id/:username", controller.DeleteBookmark)
 
 	// logout
 	app.GET("/logout", controller.Logout)
