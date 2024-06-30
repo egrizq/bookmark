@@ -28,6 +28,7 @@ func FormatBookmark(request RequestBookmark, userID int, categoryId int) *Bookma
 }
 
 type ResponseBookmark struct {
+	Id     string
 	Url    string
 	Social string
 }
@@ -53,4 +54,9 @@ func FormatCategory(userId int, categoryName string) *CategoryBookmark {
 type CategoryAndBookmarksNumber struct {
 	CategoryName string
 	Number       int
+}
+
+type UserIDCategoryID struct {
+	UserID     int
+	CategoryID int
 }

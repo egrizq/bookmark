@@ -144,3 +144,46 @@ func GetListOfCategoryAndNumberOfBookmarks(ctx *gin.Context) {
 	// response 200
 	model.Response(ctx, http.StatusOK, categoryAndNumberBookmarks)
 }
+
+func DeleteBookmark(ctx *gin.Context) {
+	// get params
+	id := ctx.Param("id")
+	usernameParams := ctx.Param("username")
+	log.Println("delete params:", usernameParams, id)
+
+	// get session username
+	username, err := helpers.GetSessionUsername(ctx)
+	if err != nil {
+		model.Response(ctx, http.StatusUnauthorized, "invalid credentials")
+		return
+	}
+
+	// check username w usernameParams
+	if username != usernameParams {
+		model.Response(ctx, http.StatusUnauthorized, "invalid credentials")
+		return
+	}
+
+	// delete rows
+	rows := database.DB.Exec(`
+		DELETE
+		FROM bookmarks
+		WHERE id = ? AND user_id = (
+			SELECT id 
+			FROM users
+			WHERE username = ?
+		)
+	`, id, usernameParams)
+
+	if rows.Error != nil {
+		log.Println("delete rows err:", rows.Error)
+		model.Response(ctx, http.StatusInternalServerError, "internal server error")
+		return
+	} else if rows.RowsAffected == 0 {
+		model.Response(ctx, http.StatusInternalServerError, "no rows affected")
+		return
+	}
+
+	// response 200
+	model.Response(ctx, http.StatusOK, "rows deleted")
+}

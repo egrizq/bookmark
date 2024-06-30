@@ -97,7 +97,7 @@ func GetBookmark(categoryID int, username string) ([]model.ResponseBookmark, err
 	var listBookmark []model.ResponseBookmark
 
 	rows := database.DB.Raw(`
-		SELECT b.social, b.url
+		SELECT b.id, b.social, b.url
 		FROM bookmarks b
 		JOIN users u
 		ON u.id = b.user_id
