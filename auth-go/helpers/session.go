@@ -21,15 +21,6 @@ func InitSession() {
 
 	key := os.Getenv("SESSIONS_KEY")
 	STORE = sessions.NewCookieStore([]byte(key))
-
-	expired := 3600
-	STORE.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   expired, // 1 hour
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
-	}
 }
 
 func CheckSession() gin.HandlerFunc {
@@ -37,15 +28,33 @@ func CheckSession() gin.HandlerFunc {
 		session, err := STORE.Get(ctx.Request, "session")
 		if err != nil {
 			model.Response(ctx, http.StatusInternalServerError, err.Error())
+			ctx.Abort()
 			return
 		}
 
 		username, ok := session.Values["username"].(string)
 		if !ok || username == "" {
+			model.Response(ctx, http.StatusUnauthorized, "unauthorized user")
 			ctx.Abort()
 			return
 		}
 		log.Println("access for", username)
+
+		expired := 3600
+		STORE.Options = &sessions.Options{
+			Path:     "/",
+			MaxAge:   expired, // 1 hour
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteNoneMode,
+		}
+
+		err = STORE.Save(ctx.Request, ctx.Writer, session)
+		if err != nil {
+			log.Println("err save session:", err.Error())
+			model.Response(ctx, http.StatusInternalServerError, "internal server error")
+			return
+		}
 
 		ctx.Next()
 	}
