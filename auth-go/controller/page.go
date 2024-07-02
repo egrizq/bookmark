@@ -9,8 +9,11 @@ import (
 )
 
 func Page(ctx *gin.Context) {
-	session, _ := helpers.STORE.Get(ctx.Request, "session")
-	username, _ := session.Values["username"].(string)
+	username, err := helpers.GetSessionUsername(ctx)
+	if err != nil || username == "" {
+		model.Response(ctx, http.StatusUnauthorized, "unauthorized user")
+		return
+	}
 
 	model.Response(ctx, http.StatusOK, username)
 }

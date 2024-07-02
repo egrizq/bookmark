@@ -60,3 +60,9 @@ type UserIDCategoryID struct {
 	UserID     int
 	CategoryID int
 }
+
+type CategoryAndDateTime struct {
+	Hour         string
+	Date         string
+	CategoryName string
+}

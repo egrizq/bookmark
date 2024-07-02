@@ -31,7 +31,7 @@ func main() {
 
 	// app-bookmarks
 	app.POST("/insert", controller.NewBookmark)
-	app.GET("/list", controller.GetListOfCategoryAndNumberOfBookmarks)
+	app.GET("/list", controller.GetListOfCategoryAndTime)
 
 	// app-category
 	app.POST("/category/insert", controller.InsertNewCategory)

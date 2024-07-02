@@ -195,3 +195,44 @@ func GetCategoryAndNumberOfBookmarks(username string) ([]model.CategoryAndBookma
 
 	return responseCategoryAndNumber, nil
 }
+
+func GetCategoryAndDateTime(username string) ([]model.CategoryAndDateTime, error) {
+	var categoryAndTime []model.CategoryAndDateTime
+
+	err := database.DB.Raw(`
+		WITH RankedBookmarks AS (
+			SELECT
+				b.created_at,
+				b.user_id,
+				c.category_name,
+				ROW_NUMBER() OVER (PARTITION BY b.category_id ORDER BY b.created_at DESC) AS rank
+			FROM
+				bookmarks b
+			JOIN
+				category_bookmarks c ON b.category_id = c.id
+		)
+		SELECT
+			TO_CHAR(rr.created_at, 'HH24:MI') as hour,
+			TO_CHAR(rr.created_at, 'dd/mm/yy') as date,
+			rr.category_name
+		FROM
+			RankedBookmarks rr
+		JOIN 
+			users u 
+		ON 
+			u.id = rr.user_id
+		WHERE
+			rank = 1 AND u.username = ?;
+	`, username).Scan(&categoryAndTime)
+
+	if err.Error != nil {
+		log.Println("category and time err:", err.Error.Error())
+		return []model.CategoryAndDateTime{}, fmt.Errorf("error")
+	} else if errors.Is(err.Error, gorm.ErrRecordNotFound) {
+		log.Println("category and time err:", err.Error.Error())
+		return []model.CategoryAndDateTime{}, fmt.Errorf("please insert your bookmark")
+	}
+	log.Println("category and time", categoryAndTime)
+
+	return categoryAndTime, nil
+}

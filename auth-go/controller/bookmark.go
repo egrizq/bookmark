@@ -126,7 +126,7 @@ func GetListCategory(ctx *gin.Context) {
 	model.Response(ctx, http.StatusOK, listCategory)
 }
 
-func GetListOfCategoryAndNumberOfBookmarks(ctx *gin.Context) {
+func GetListOfCategoryAndTime(ctx *gin.Context) {
 	// get session username
 	username, err := helpers.GetSessionUsername(ctx)
 	if err != nil {
@@ -134,15 +134,15 @@ func GetListOfCategoryAndNumberOfBookmarks(ctx *gin.Context) {
 		return
 	}
 
-	// get category with number of bookmarks
-	categoryAndNumberBookmarks, err := helpers.GetCategoryAndNumberOfBookmarks(username)
+	// get category and time
+	categoryAndTime, err := helpers.GetCategoryAndDateTime(username)
 	if err != nil {
 		model.Response(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// response 200
-	model.Response(ctx, http.StatusOK, categoryAndNumberBookmarks)
+	model.Response(ctx, http.StatusOK, categoryAndTime)
 }
 
 func DeleteBookmark(ctx *gin.Context) {
